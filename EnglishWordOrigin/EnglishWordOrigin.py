@@ -8,65 +8,120 @@ from selenium import webdriver
 urlBase = """https://dic.daum.net/search.do?q={0}&dic=eng"""
 urlDetail = """https://dic.daum.net/word/view.do?wordid={0}"""
 
+path = "E:\\OneDrive\\학습\\영어\\2024\\"
+fileName = "wordbook-all.csv"
+targetFileName = "target.txt"
+
+options = webdriver.ChromeOptions()
+#options.add_argument("headless")
+driver = webdriver.Chrome(options=options)
+
 def returnSoup(getUrl):
-	options = webdriver.ChromeOptions()
-	options.add_argument("headless")
 	
-	driver = webdriver.Chrome(options=options)
 	driver.get(getUrl)
 	html = driver.page_source
 	
-	driver.close()
+	#driver.close()
 	
 	soup = BeautifulSoup(html, "html.parser")
 	return soup
 
 def search_daum_dic_1(getUrl):
+	print('FirstUrl: ', getUrl)
 	soup = returnSoup(getUrl)
 	tit_cleansch = soup.find(attrs={'class':'tit_cleansch'})
 	
 	if tit_cleansch != None:
 		data_tiara_id = tit_cleansch.attrs.get('data-tiara-id')
 		sendUrl = urlDetail.format(data_tiara_id)
-		soup = returnSoup(getUrl)
-		search_daum_dic_3(soup)
+		#print('SecondUrl: ', sendUrl)
+		soup = returnSoup(sendUrl)
+		return search_daum_dic_3(soup)
 	else:
-		search_daum_dic_3(soup)	
+		return search_daum_dic_3(soup)	
 
-def search_daum_dic_2(getUrl):
-	soup = returnSoup(getUrl)
-	search_daum_dic_3(soup)
+#def search_daum_dic_2(getUrl):
+#	soup = returnSoup(getUrl)
+#	search_daum_dic_3(soup)
 	
 
 def search_daum_dic_3(soup):
-	txt_refer = soup.find_all(attrs={'class':'txt_refer on'})	
+	#txt_refer = soup.find_all(attrs={'class':'txt_refer on'})
+	#txt_refer = soup.find_all()
+	txt_refer = soup.find_all(attrs={'class':'ex_refer'})
 
 	strResult = ''
 	
 	if len(txt_refer) == 0:
-		strResult += 'None\n'
-		#strResult += 'None, '
+		strResult += ''
 	else:
 		for item in txt_refer:
 			parseText = item.get_text().strip()
-			#if parseText and parseText.replace('[', '').replace(']', '').replace('{', '').replace('}', '').startswith('어원'):
 			if "어원" in parseText:
-				print ('parseText: [' + parseText + ']')
+				
+				txt_refer = item.find_all(attrs={'class':'txt_refer on'})
+				
+				if len(txt_refer) == 1:
+					parseText = txt_refer[0].get_text().strip()
+					parseText = parseText.replace('[어원] ', '').replace('\n', ' | ')
+				else:
+					print('CHECK_THIS')
+
 				if len(strResult) != 0:
 					strResult += ', ' + parseText
 				else:
 					strResult = parseText
 	
 	print('strResult: [' + strResult + ']')
+	
+	return strResult
+
+
+def readFile(fileName):
+	result = []
+	f = open(fileName, 'r', encoding='UTF8')
+	
+	while True:
+		line = f.readline()
+		if not line: 
+			break
+		lineSplit = line.split(',')
+		result.append(lineSplit[0])
+		
+	f.close()
+	
+	return result
+
+def doWork(wordList):
+
+	targetFile = path + targetFileName
+
+	f = open(targetFile, 'w', encoding='UTF8')
+
+	for word in wordList:	
+		urlBaseFormat = urlBase.format(word)
+		result = search_daum_dic_1(urlBaseFormat)
+		writeLine = word + "\t" + result + "\n"
+		f.write(writeLine)
+		
+	f.close()
 
 def main(args=None):
 	print("main: Start")
 	
+	wordList = readFile(path + fileName)
+	
 	try:
-		word = 'test'
-		#word = 'welfare'
-		urlBaseFormat = urlBase.format(word)
-		search_daum_dic_1(urlBaseFormat)
+		
+		#wordList = ['insfire']
+
+		doWork(wordList)
+
+		driver.close()
+		#word = 'test'
+		##word = 'welfare'
+		#urlBaseFormat = urlBase.format(word)
+		#search_daum_dic_1(urlBaseFormat)
 
 	except Exception as exptn:
 		print("main: Exception")
