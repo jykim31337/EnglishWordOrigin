@@ -68,7 +68,7 @@ def search_daum_dic_3(soup):
 					print('CHECK_THIS')
 
 				if len(strResult) != 0:
-					strResult += ', ' + parseText
+					strResult += ' | ' + parseText
 				else:
 					strResult = parseText
 	
@@ -94,17 +94,24 @@ def readFile(fileName):
 
 def doWork(wordList):
 
-	targetFile = path + targetFileName
-
-	f = open(targetFile, 'w', encoding='UTF8')
+	resultList = []
 
 	for word in wordList:	
 		urlBaseFormat = urlBase.format(word)
 		result = search_daum_dic_1(urlBaseFormat)
 		writeLine = word + "\t" + result + "\n"
-		f.write(writeLine)
+		resultList.append([word, result, len(result)])
 		
+	return resultList
+
+def saveWork(list):
+	targetFile = path + targetFileName
+	f = open(targetFile, 'w', encoding='UTF8')
+	for item in list:
+		writeLine = item[0] + "\t" + item[1] + "\n"
+		f.write(writeLine)
 	f.close()
+
 
 def main(args=None):
 	print("main: Start")
@@ -112,12 +119,51 @@ def main(args=None):
 	wordList = readFile(path + fileName)
 	
 	try:
-		
-		#wordList = ['insfire']
+		'''
+		wordList = [
+			'excel'
+			, 'excite'
+			, 'exhaust'
+			, 'expect'
+			, 'expected'
+			, 'experience'
+			, 'experiment'
+			, 'expert'
+			, 'extend'
+			, 'extensive'
+			]
+		'''
 
-		doWork(wordList)
+		wordListLen = len(wordList)
+
+		I_IDX= wordListLen
+		J_IDX = 5
+		totalResult = [[0]*J_IDX for _ in range(I_IDX)]
+		finalResult = [[0]*J_IDX for _ in range(I_IDX)]
+
+		for j in range(0, J_IDX):
+			result = doWork(wordList)
+			
+			for i in range(0, wordListLen):
+				totalResult[i][j] = result[i]
+
+		for i in range(0, wordListLen):
+			if (totalResult[i][0] == totalResult[i][1] == totalResult[i][2]) == True:
+				finalResult[i][0] = wordList[i]
+				finalResult[i][1] = totalResult[i][0][1]
+			else:
+				finalResult[i][0] = wordList[i]
+				
+				sortedResult = sorted(totalResult[i], reverse = True, key = lambda x:x[2])
+				print('sortedResult: ', sortedResult)
+				finalResult[i][1] = sortedResult[0][1]
+
+				pass
+				
 
 		driver.close()
+
+		saveWork(finalResult)
 		#word = 'test'
 		##word = 'welfare'
 		#urlBaseFormat = urlBase.format(word)
