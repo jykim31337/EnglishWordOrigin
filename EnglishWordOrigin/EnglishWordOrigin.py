@@ -27,7 +27,7 @@ def returnSoup(getUrl):
 	return soup
 
 def search_daum_dic_1(getUrl):
-	print('FirstUrl: ', getUrl)
+	#print('FirstUrl: ', getUrl)
 	soup = returnSoup(getUrl)
 	tit_cleansch = soup.find(attrs={'class':'tit_cleansch'})
 	
@@ -40,42 +40,119 @@ def search_daum_dic_1(getUrl):
 	else:
 		return search_daum_dic_3(soup)	
 
+	
+def get_example(soup):
+	
+	#print("get_example Start")
+	
+	try:
+		'''
+		$('.list_example')[0].children[0]
+		$('.list_example')[3].children.length
+		'''
+		#list_word = soup.find_all(attrs={'class':'list_word'})
+		#on = list_word[0].find_all(attrs={'class':'on'})
+		txt_example = soup.find_all(attrs={'class':'list_example'})
+		#cont_example = item.find_all(attrs={'class':'cont_example'})
+		if len(txt_example) == 0:
+			return ''
+	
+		examples = "";
+
+		for te in txt_example:
+			if len(te) == 0:
+				return ''
+			else:
+				box_example = te.find_all(attrs={'class':'box_example'})
+				
+				box_exampleList = []
+
+				for be in box_example:
+					txt_ex = be.find_all(attrs={'class':'txt_ex'})
+					if len(txt_ex) == 2:
+						txt_example = txt_ex[0].get_text().strip()
+						mean_example = txt_ex[1].get_text().strip()
+						box_exampleList.append([txt_example, mean_example, len(txt_example) + len(mean_example)])
+						
+				if len(box_exampleList) != 0:
+					sortedResult = sorted(box_exampleList, key = lambda x:x[2])
+					
+					if len(examples) != 0:
+						examples += "<br>"	
+						
+					addItem = sortedResult[0][0] + '<br>' + sortedResult[0][1]
+
+					examples += addItem
+		
+	except Exception as exptn:
+		print("get_example exception")
+		print(type(exptn))
+		print(exptn.args)
+		print(exptn)
+		print('exptn: ', traceback.format_exc())
+	else:
+		#print("get_example Ok")
+		pass
+	
+	#print("get_example End")
+	
+	return examples
+
 #def search_daum_dic_2(getUrl):
 #	soup = returnSoup(getUrl)
 #	search_daum_dic_3(soup)
-	
 
 def search_daum_dic_3(soup):
-	#txt_refer = soup.find_all(attrs={'class':'txt_refer on'})
-	#txt_refer = soup.find_all()
-	txt_refer = soup.find_all(attrs={'class':'ex_refer'})
-
+	
+	#print("search_daum_dic_3 Start")
+	
 	strResult = ''
 	
-	if len(txt_refer) == 0:
-		strResult += ''
-	else:
-		for item in txt_refer:
-			parseText = item.get_text().strip()
-			if "어원" in parseText:
-				
-				txt_refer = item.find_all(attrs={'class':'txt_refer on'})
-				
-				if len(txt_refer) == 1:
-					parseText = txt_refer[0].get_text().strip()
-					parseText = parseText.replace('[어원] ', '').replace('\n', ' | ')
-				else:
-					print('CHECK_THIS')
-
-				if len(strResult) != 0:
-					strResult += ' | ' + parseText
-				else:
-					strResult = parseText
+	try:
+		#txt_refer = soup.find_all(attrs={'class':'txt_refer on'})
+		#txt_refer = soup.find_all()
+		txt_refer = soup.find_all(attrs={'class':'ex_refer'})
 	
-	print('strResult: [' + strResult + ']')
+		if len(txt_refer) == 0:
+			strResult += ''
+		else:
+			for item in txt_refer:
+				parseText = item.get_text().strip()
+				if "어원" in parseText:
+				
+					txt_refer = item.find_all(attrs={'class':'txt_refer on'})
+				
+					if len(txt_refer) == 1:
+						parseText = txt_refer[0].get_text().strip()
+						parseText = parseText.replace('[어원] ', '').replace('\n', '<br>')
+					else:
+						print('CHECK_THIS')
+
+					if len(strResult) != 0:
+						strResult += '<br>' + parseText
+					else:
+						strResult = parseText
+	
+		#print('strResult: [' + strResult + ']')
+
+		example = get_example(soup)
+
+		if len(example) != 0:
+			strResult += "\t " + example
+			
+	except Exception as exptn:
+		print("search_daum_dic_3 exception")
+		print(type(exptn))
+		print(exptn.args)
+		print(exptn)
+		print('exptn: ', traceback.format_exc())
+	else:
+		#print("search_daum_dic_3 Ok")
+		pass
+
+	#print("search_daum_dic_3 End")
 	
 	return strResult
-
 
 def readFile(fileName):
 	result = []
@@ -92,11 +169,16 @@ def readFile(fileName):
 	
 	return result
 
-def doWork(wordList):
+def doWork(wordList, workIdx):
 
 	resultList = []
-
-	for word in wordList:	
+	
+	wordListLen = len(wordList)
+	
+	#for word in wordList:	
+	for i in range(0, len(wordList)):
+		word = wordList[i]
+		print("workIdx: ", str(workIdx + 1), " | wordIdx: ", str(i + 1) + "/" + str(wordListLen), " | word: ", word)
 		urlBaseFormat = urlBase.format(word)
 		result = search_daum_dic_1(urlBaseFormat)
 		writeLine = word + "\t" + result + "\n"
@@ -119,20 +201,27 @@ def main(args=None):
 	wordList = readFile(path + fileName)
 	
 	try:
-		'''
 		wordList = [
-			'excel'
-			, 'excite'
-			, 'exhaust'
-			, 'expect'
-			, 'expected'
-			, 'experience'
-			, 'experiment'
-			, 'expert'
-			, 'extend'
-			, 'extensive'
+			'footage', \
+			'bond', \
+			'precise', \
+			'fisher', \
+			'fisherman', \
+			'entertainment', \
+			'entertain', \
+			'curious', \
+			'curiosity', \
+			'soar', \
+			'route', \
+			'bait', \
+			'go through', \
+			'crisis', \
+			'ify', \
+			'janitor', \
+			'strict'
 			]
-		'''
+		
+		#wordList = ['inspire']
 
 		wordListLen = len(wordList)
 
@@ -142,20 +231,30 @@ def main(args=None):
 		finalResult = [[0]*J_IDX for _ in range(I_IDX)]
 
 		for j in range(0, J_IDX):
-			result = doWork(wordList)
+			
+			print("Work Index: ", j + 1)
+
+			result = doWork(wordList, j)
 			
 			for i in range(0, wordListLen):
 				totalResult[i][j] = result[i]
 
 		for i in range(0, wordListLen):
-			if (totalResult[i][0] == totalResult[i][1] == totalResult[i][2]) == True:
+			
+			IsSame = True
+			for j in range(0, J_IDX):
+				if totalResult[i][0] != totalResult[i][j]:
+					IsSame = False
+					break
+
+			if IsSame == True:
 				finalResult[i][0] = wordList[i]
 				finalResult[i][1] = totalResult[i][0][1]
 			else:
+				print("Is Not Same: totalResult[i]: ", totalResult[i])
 				finalResult[i][0] = wordList[i]
-				
 				sortedResult = sorted(totalResult[i], reverse = True, key = lambda x:x[2])
-				print('sortedResult: ', sortedResult)
+				#print('sortedResult: ', sortedResult)
 				finalResult[i][1] = sortedResult[0][1]
 
 				pass
@@ -164,10 +263,6 @@ def main(args=None):
 		driver.close()
 
 		saveWork(finalResult)
-		#word = 'test'
-		##word = 'welfare'
-		#urlBaseFormat = urlBase.format(word)
-		#search_daum_dic_1(urlBaseFormat)
 
 	except Exception as exptn:
 		print("main: Exception")
