@@ -1,4 +1,4 @@
-Ôªø# -*- coding: cp949 -*-
+# -*- coding: cp949 -*-
 import traceback
 
 import sys
@@ -6,36 +6,34 @@ import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
+import pandas as pd
+
+import xlrd
+from xlutils.copy import copy
+
 urlBase = """https://dic.daum.net/search.do?q={0}&dic=eng"""
 urlDetail = """https://dic.daum.net/word/view.do?wordid={0}"""
 
-path = "d:\\DaumDic\\"
-fileName = "wordbook.csv"
-targetFileName = "target.txt"
+workPath = "d:\\DaumDic\\"
+sourceExcelFileName = "wordbook.xls"
+targetExcelFileName = "workbook_result.xls"
 
 options = webdriver.ChromeOptions()
-#options.add_argument("headless")
 driver = webdriver.Chrome(options=options)
 
 def returnSoup(getUrl):
-	
 	driver.get(getUrl)
 	html = driver.page_source
-	
-	#driver.close()
-	
 	soup = BeautifulSoup(html, "html.parser")
 	return soup
 
 def search_daum_dic_1(getUrl):
-	#print('FirstUrl: ', getUrl)
 	soup = returnSoup(getUrl)
 	tit_cleansch = soup.find(attrs={'class':'tit_cleansch'})
 	
 	if tit_cleansch != None:
 		data_tiara_id = tit_cleansch.attrs.get('data-tiara-id')
 		sendUrl = urlDetail.format(data_tiara_id)
-		#print('SecondUrl: ', sendUrl)
 		soup = returnSoup(sendUrl)
 		return search_daum_dic_3(soup)
 	else:
@@ -44,17 +42,12 @@ def search_daum_dic_1(getUrl):
 	
 def get_example(soup):
 	
-	#print("get_example Start")
-	
 	try:
 		'''
 		$('.list_example')[0].children[0]
 		$('.list_example')[3].children.length
 		'''
-		#list_word = soup.find_all(attrs={'class':'list_word'})
-		#on = list_word[0].find_all(attrs={'class':'on'})
 		txt_example = soup.find_all(attrs={'class':'list_example'})
-		#cont_example = item.find_all(attrs={'class':'cont_example'})
 		if len(txt_example) == 0:
 			return ''
 	
@@ -92,26 +85,15 @@ def get_example(soup):
 		print(exptn)
 		print('exptn: ', traceback.format_exc())
 	else:
-		#print("get_example Ok")
 		pass
-	
-	#print("get_example End")
 	
 	return examples
 
-#def search_daum_dic_2(getUrl):
-#	soup = returnSoup(getUrl)
-#	search_daum_dic_3(soup)
-
 def search_daum_dic_3(soup):
-	
-	#print("search_daum_dic_3 Start")
 	
 	strResult = ''
 	
 	try:
-		#txt_refer = soup.find_all(attrs={'class':'txt_refer on'})
-		#txt_refer = soup.find_all()
 		txt_refer = soup.find_all(attrs={'class':'ex_refer'})
 	
 		if len(txt_refer) == 0:
@@ -119,13 +101,13 @@ def search_daum_dic_3(soup):
 		else:
 			for item in txt_refer:
 				parseText = item.get_text().strip()
-				if "Ïñ¥Ïõê" in parseText:
+				if "æÓø¯" in parseText:
 				
 					txt_refer = item.find_all(attrs={'class':'txt_refer on'})
 				
 					if len(txt_refer) == 1:
 						parseText = txt_refer[0].get_text().strip()
-						parseText = parseText.replace('[Ïñ¥Ïõê] ', '').replace('\n', '<br>')
+						parseText = parseText.replace('[æÓø¯] ', '').replace('\n', '<br>')
 					else:
 						print('CHECK_THIS')
 
@@ -134,8 +116,6 @@ def search_daum_dic_3(soup):
 					else:
 						strResult = parseText
 	
-		#print('strResult: [' + strResult + ']')
-
 		example = get_example(soup)
 
 		if len(example) != 0:
@@ -148,25 +128,14 @@ def search_daum_dic_3(soup):
 		print(exptn)
 		print('exptn: ', traceback.format_exc())
 	else:
-		#print("search_daum_dic_3 Ok")
 		pass
 
-	#print("search_daum_dic_3 End")
-	
 	return strResult
 
-def readFile(fileName):
-	result = []
-	f = open(fileName, 'r', encoding='UTF8')
+def readXlsFile(fileName):
 	
-	while True:
-		line = f.readline()
-		if not line: 
-			break
-		lineSplit = line.split(',')
-		result.append(lineSplit[0])
-		
-	f.close()
+	df = pd.read_excel(fileName, usecols=['¥‹æÓ'])
+	result = df['¥‹æÓ'].tolist()
 	
 	return result
 
@@ -176,7 +145,6 @@ def doWork(wordList, workIdx):
 	
 	wordListLen = len(wordList)
 	
-	#for word in wordList:	
 	for i in range(0, len(wordList)):
 		word = wordList[i]
 		print("workIdx: ", str(workIdx + 1), " | wordIdx: ", str(i + 1) + "/" + str(wordListLen), " | word: ", word)
@@ -187,21 +155,36 @@ def doWork(wordList, workIdx):
 		
 	return resultList
 
-def saveWork(list):
-	targetFile = path + targetFileName
-	f = open(targetFile, 'w', encoding='UTF8')
+def saveWorkXls(list):
+	sourceFile = workPath + sourceExcelFileName
+	targetFile = workPath + targetExcelFileName
+	
+	rb = xlrd.open_workbook(sourceFile, formatting_info=True)
+	sheet = rb.sheet_by_index(0)
+	wb = copy(rb)
+	ws = wb.get_sheet(0)
+
+	ws.write(0, 7, 'æÓø¯')
+	ws.write(0, 8, 'øπ¡¶')
+
+	row = 1
+
 	for item in list:
-		writeLine = item[0] + "\t" + item[1] + "\n"
-		f.write(writeLine)
-	f.close()
+		ws.write(row, 7, item[0])
+		ws.write(row, 8, item[1])
+		row = row + 1
+		
+	wb.save(targetFile)
 
 
 def main(args=None):
+	
 	print("main: Start")
 	
-	wordList = readFile(path + fileName)
+	wordList = readXlsFile(workPath + sourceExcelFileName)
 	
 	try:
+		# if simple list work
 		#wordList = [
 		#	'rupture', 
 		#	'wander', 
@@ -218,13 +201,14 @@ def main(args=None):
 		#	'bunk', 
 		#	'sublimate', 
 		#	]
-		#
-		##wordList = ['inspire']
+		
+		# or only single word
+		#wordList = ['inspire']
 
 		wordListLen = len(wordList)
 
 		I_IDX= wordListLen
-		J_IDX = 5
+		J_IDX = 3
 		totalResult = [[0]*J_IDX for _ in range(I_IDX)]
 		finalResult = [[0]*J_IDX for _ in range(I_IDX)]
 
@@ -252,7 +236,6 @@ def main(args=None):
 				print("Is Not Same: totalResult[i]: ", totalResult[i])
 				finalResult[i][0] = wordList[i]
 				sortedResult = sorted(totalResult[i], reverse = True, key = lambda x:x[2])
-				#print('sortedResult: ', sortedResult)
 				finalResult[i][1] = sortedResult[0][1]
 
 				pass
@@ -260,7 +243,7 @@ def main(args=None):
 
 		driver.close()
 
-		saveWork(finalResult)
+		saveWorkXls(finalResult)
 
 	except Exception as exptn:
 		print("main: Exception")
@@ -271,8 +254,6 @@ def main(args=None):
 	else:
 		print("main: Ok")
 	print("main: End")
-		
-
 
 if __name__ == "__main__":
 	main()
