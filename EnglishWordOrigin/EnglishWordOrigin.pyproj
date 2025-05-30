@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>6a732766-0ad3-4d89-b348-ea0350b840ed</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>EnglishWordOriginExt.py</StartupFile>
+    <StartupFile>EnglishWordOriginSample.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -23,6 +23,7 @@
   <ItemGroup>
     <Compile Include="EnglishWordOrigin.py" />
     <Compile Include="EnglishWordOriginExt.py" />
+    <Compile Include="EnglishWordOriginSample.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
